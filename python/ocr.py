@@ -37,12 +37,25 @@ class AnnotationResult(object):
         'boundingPoly']['vertices'])
     self.all_text = self.all_annotation['description']
 
+    sub_annotations = response['textAnnotations'][1:]
+
+    self.sub_bounding_boxes = [
+        self.BoundingBoxJson2List(sub_annotation['boundingPoly']['vertices'])
+        for sub_annotation in sub_annotations
+    ]
+    self.sub_texts = [sub_annotation['description']
+                      for sub_annotation in sub_annotations]
+
     self._parsed = True
     return True
 
   def GetBoundingBox(self):
     assert self._parsed
     return self.all_bounding_box
+
+  def GetSubBoundingBoxes(self):
+    assert self._parsed
+    return self.sub_bounding_boxes
 
   @staticmethod
   def BoundingBoxJson2List(json_box):
@@ -97,6 +110,7 @@ def main():
   result = text_annotator.GetTextAnnotations(image_file)
   if result.Parse():
     print(result.GetBoundingBox())
+    print(result.GetSubBoundingBoxes())
 
   # print('number of text entities: %d' %
   #       len(response['responses'][0]['textAnnotations']))

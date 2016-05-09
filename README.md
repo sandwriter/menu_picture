@@ -12,6 +12,9 @@ Show pictures for menu item
 8. ~~Annotate bounding box.~~ Basic rectangle annotation for the biggest bounding box.
 9. Multiple sub bounding box annotation.
 
+# Bugs
+1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.
+
 # Reference
 1. [PIL](https://pillow.readthedocs.io/en/latest/handbook/index.html)
 2. [PIL Annotation](http://effbot.org/imagingbook/imagedraw.htm)
