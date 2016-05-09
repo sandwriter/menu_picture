@@ -64,3 +64,4 @@ target/
 data/*
 credential/*
 *~
+*DS_Store

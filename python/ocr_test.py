@@ -15,11 +15,7 @@ class TestOcr(unittest.TestCase):
     result = self.text_annotator.GetTextAnnotations('../data/two_line.png')
     self.assertTrue(result.Parse())
     all_bounding_box = result.GetBoundingBox()
-    self.assertEqual(
-        [(258, 171),
-         (258, 205),
-         (346, 171),
-         (346, 205),], all_bounding_box)
+    self.assertEqual([258, 171, 346, 205], all_bounding_box)
 
 
 if __name__ == '__main__':

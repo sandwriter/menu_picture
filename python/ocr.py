@@ -47,8 +47,8 @@ class AnnotationResult(object):
   @staticmethod
   def BoundingBoxJson2List(json_box):
     '''Return a list of (x, y) sorted by x then y in ascending order.'''
-    return sorted([(v['x'], v['y']) for v in json_box],
-                  key=lambda t: (t[0], t[1]))
+    return [json_box[0]['x'], json_box[0]['y'], json_box[2]['x'],
+            json_box[2]['y']]
 
 
 class TextAnnotator(object):
@@ -92,6 +92,7 @@ def main():
   # image_file = '../data/test1.jpg'
   # image_file = '../data/roast_pork.png'
   image_file = '../data/two_line.png'
+  # image_file = '../data/rotate.jpg'
 
   result = text_annotator.GetTextAnnotations(image_file)
   if result.Parse():
