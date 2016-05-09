@@ -7,3 +7,7 @@ Show pictures for menu item
 3. handle empty/error text annotations.
 4. multiple response
 5. language
+6. Show cropped picture.
+
+# Reference
+1. [PIL](https://pillow.readthedocs.io/en/latest/handbook/index.html)
