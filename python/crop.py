@@ -2,6 +2,7 @@ from PIL import Image
 from PIL import ImageDraw
 
 import ocr
+import util
 
 
 def ShowImageWithBoundingBoxs(image_file):
