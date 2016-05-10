@@ -16,4 +16,15 @@ def Intersect(rect1, rect2):
 
 def Area(rect):
   left, top, right, bottom = rect
-  return (right - left) * (bottom - top)
+  return float(right - left) * (bottom - top)
+
+
+def IntersectMultipleWithRatio(highlight, rect_list, ratio=0.0):
+  '''Return a list of rectangles with overlapping area larger than ratio of target rectangle.'''
+  result = []
+  for rect in rect_list:
+    overlap = Intersect(highlight, rect)
+    if overlap is not None and Area(overlap) / Area(rect) >= ratio:
+      result.append(rect)
+
+  return result

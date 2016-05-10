@@ -33,14 +33,14 @@ class AnnotationResult(object):
             'boundingPoly' not in self.all_annotation):
       return False
 
-    self.all_bounding_box = self.BoundingBoxJson2List(self.all_annotation[
+    self.all_bounding_box = self.BoundingBoxJson2Set(self.all_annotation[
         'boundingPoly']['vertices'])
     self.all_text = self.all_annotation['description']
 
     sub_annotations = response['textAnnotations'][1:]
 
     self.sub_bounding_boxes = [
-        self.BoundingBoxJson2List(sub_annotation['boundingPoly']['vertices'])
+        self.BoundingBoxJson2Set(sub_annotation['boundingPoly']['vertices'])
         for sub_annotation in sub_annotations
     ]
     self.sub_texts = [sub_annotation['description']
@@ -57,11 +57,20 @@ class AnnotationResult(object):
     assert self._parsed
     return self.sub_bounding_boxes
 
+  def GetSubTexts(self):
+    assert self._parsed
+    return self.sub_texts
+
+  def GetSubBoxTextMap(self):
+    assert self._parsed
+    return {box: text
+            for box, text in zip(self.sub_bounding_boxes, self.sub_texts)}
+
   @staticmethod
-  def BoundingBoxJson2List(json_box):
+  def BoundingBoxJson2Set(json_box):
     '''Return a list of (x, y) sorted by x then y in ascending order.'''
-    return [json_box[0]['x'], json_box[0]['y'], json_box[2]['x'],
-            json_box[2]['y']]
+    return (json_box[0]['x'], json_box[0]['y'], json_box[2]['x'],
+            json_box[2]['y'])
 
 
 class TextAnnotator(object):
