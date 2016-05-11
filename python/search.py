@@ -1,4 +1,7 @@
+import urllib
+
 from googleapiclient import discovery
+from PIL import Image
 
 
 class ImageSearch(object):
@@ -28,8 +31,20 @@ class ImageSearch(object):
 
 
 def main():
+  num = 5
+  thumbnail_size = (400, 300)
+  background = Image.new('RGBA', (thumbnail_size[0], thumbnail_size[1] * num),
+                         (255, 255, 255, 255))
   image_search = ImageSearch()
-  print(image_search.Search('grilled steak', num=5))
+  image_link_list = image_search.Search('grilled steak', num=num)
+  for i, image_link in enumerate(image_link_list):
+    tmp_image_file = '/tmp/img%d' % i
+    urllib.urlretrieve(image_link, tmp_image_file)
+    im = Image.open(tmp_image_file)
+    im.thumbnail(thumbnail_size)
+    offset = (0, thumbnail_size[1] * i)
+    background.paste(im, offset)
+  background.show()
 
 
 if __name__ == '__main__':
