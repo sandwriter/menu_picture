@@ -5,11 +5,9 @@
     android:layout_height="match_parent"
     tools:context="com.menupicture.menupicture.MainActivity">
 
-    <ImageView
-        android:id="@+id/menu_picture"
-        android:layout_width="match_parent"
+    <com.menupicture.menupicture.HighlightView
+        android:id="@+id/highlight_view"
         android:layout_height="match_parent"
-        android:adjustViewBounds="true"/>
-
-
+        android:layout_width="match_parent"
+        />
 </RelativeLayout>
