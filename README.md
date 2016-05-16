@@ -21,7 +21,10 @@ Show pictures for menu item
 # TODO(Android)
 1. Highlight
 2. Bounding Highlight.
-3. Canvas view with image background.
+3. ~~Canvas view with image background.~~
+4. align image to top.
+5. highlight marker.
+6. add a imageview with modified pciture.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.
