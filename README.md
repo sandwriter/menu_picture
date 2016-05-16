@@ -20,12 +20,18 @@ Show pictures for menu item
 
 # TODO(Android)
 1. ~~Highlight~~
-2. Bounding Highlight.
+2. ~~Bounding Highlight.~~
 3. ~~Canvas view with image background.~~
-4. align image to top.
-5. highlight marker.
-6. add a imageview with modified pciture.
-7. Highlight on top of picture.
+4. ~~align image to top.~~ aligh/scale with aspect ratio to the center
+5. ~~highlight marker.~~
+6. ~~add a imageview with modified pciture.~~ a view is good
+7. ~~Highlight on top of picture.~~
+8. pan move picture.
+9. hidding button to control edit/move mode.
+10. vision api.
+11. crop
+12. search
+13. hidding tab to show search result.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.

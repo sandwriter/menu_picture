@@ -15,24 +15,5 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inDither = true;
-        options.inScaled = true;
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.two_line, options);
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setColor(Color.BLUE);
-
-        Bitmap workingBitmap = Bitmap.createBitmap(bitmap);
-        Bitmap mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
-
-        Canvas canvas = new Canvas(mutableBitmap);
-        canvas.drawCircle(60, 50, 25, paint);
-
-        ImageView imageView = (ImageView)findViewById(R.id.menu_picture);
-        imageView.setImageBitmap(mutableBitmap);
     }
 }
