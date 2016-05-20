@@ -28,10 +28,13 @@ Show pictures for menu item
 7. ~~Highlight on top of picture.~~
 8. pan move picture.
 9. hidding button to control edit/move mode.
-10. vision api.
+10. ~~vision api.~~
 11. crop
 12. search
 13. hidding tab to show search result.
+14. ~~bound view.~~
+15. move finger to enable bounds.
+16. optimize some java code.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.

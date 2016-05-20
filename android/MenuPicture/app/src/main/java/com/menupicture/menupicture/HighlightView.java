@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
@@ -25,12 +26,18 @@ import com.google.api.services.vision.v1.VisionRequestInitializer;
 import com.google.api.services.vision.v1.model.AnnotateImageRequest;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesRequest;
 import com.google.api.services.vision.v1.model.BatchAnnotateImagesResponse;
+import com.google.api.services.vision.v1.model.EntityAnnotation;
 import com.google.api.services.vision.v1.model.Feature;
 import com.google.api.services.vision.v1.model.Image;
+import com.google.api.services.vision.v1.model.Vertex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by wenjie on 5/15/16.
@@ -42,6 +49,7 @@ public class HighlightView extends View {
     private Path path;
     private Paint highlight_paint;
     private Paint bitmap_paint;
+    private Paint rectf_paint;
     private Bitmap menu_bitmap;
 
     // Path current point.
@@ -52,6 +60,19 @@ public class HighlightView extends View {
     private static final String CLOUD_VISION_API_KEY = "AIzaSyBFoF4sDsSj6FV8O-cYsyHbU9stfIrACJg";
 
     private static final String TAG = "HighlightView";
+
+    private final ReadWriteLock bound_lock = new ReentrantReadWriteLock();
+    private final Lock bound_rLock = bound_lock.readLock();
+    private final Lock bound_wLock = bound_lock.writeLock();
+
+
+    private final ReadWriteLock matrix_lock = new ReentrantReadWriteLock();
+    private final Lock matrix_rLock = matrix_lock.readLock();
+    private final Lock matrix_wLock = matrix_lock.writeLock();
+
+    private Matrix transformation;
+
+    private java.util.ArrayList<RectF> rect_list = new java.util.ArrayList<RectF>();
 
     public HighlightView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -70,6 +91,12 @@ public class HighlightView extends View {
         bitmap_paint.setFilterBitmap(true);
         bitmap_paint.setDither(true);
 
+        rectf_paint = new Paint(Paint.DITHER_FLAG);
+        rectf_paint.setAntiAlias(true);
+        rectf_paint.setColor(Color.YELLOW);
+        rectf_paint.setStyle(Paint.Style.FILL);
+        rectf_paint.setAlpha(60);
+
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inDither = true;
         options.inScaled = true;
@@ -77,9 +104,9 @@ public class HighlightView extends View {
 
         menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.two_line, options);
 
-        new AsyncTask<Object, Void, String>(){
+        new AsyncTask<Object, Void, List<EntityAnnotation>>() {
             @Override
-            protected String doInBackground(Object... params) {
+            protected List<EntityAnnotation> doInBackground(Object... params) {
                 try {
                     HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
                     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
@@ -126,16 +153,55 @@ public class HighlightView extends View {
 
                     BatchAnnotateImagesResponse response = annotateRequest.execute();
                     Log.d(TAG, "response: " + response.toPrettyString());
-                    return response.toPrettyString();
+                    return convertToRectList(response);
 
                 } catch (GoogleJsonResponseException e) {
                     Log.d(TAG, "failed to make API request because " + e.getContent());
                 } catch (IOException e) {
                     Log.d(TAG, "failed to make API request because of other IOException " +
                             e.getMessage());
+                } catch (Exception e) {
+                    Log.d(TAG, "Cloud Vision API request failed. Check logs for details. " + e.getMessage());
                 }
-                return "Cloud Vision API request failed. Check logs for details.";
+                return new ArrayList<EntityAnnotation>();
             }
+
+            protected void onPostExecute(List<EntityAnnotation> result) {
+                bound_wLock.lock();
+                try {
+                    rect_list.clear();
+                    for (EntityAnnotation entity : result) {
+                        rect_list.add(GetRectF(entity.getBoundingPoly().getVertices()));
+                    }
+                } finally {
+                    bound_wLock.unlock();
+                }
+                invalidate();
+            }
+
+            private RectF GetRectF(List<Vertex> vertices) {
+                RectF rectf = new RectF();
+                int left = vertices.get(0).getX();
+                int top = vertices.get(0).getY();
+                int right = vertices.get(2).getX();
+                int bottom = vertices.get(2).getY();
+                rectf.set(left, top, right, bottom);
+
+                matrix_rLock.lock();
+                try{
+                    transformation.mapRect(rectf);
+                }finally {
+                    matrix_rLock.unlock();
+                }
+                return rectf;
+            }
+
+            private List<EntityAnnotation> convertToRectList(BatchAnnotateImagesResponse response) {
+                List<EntityAnnotation> annotations = response.getResponses().get(0).getTextAnnotations();
+                return annotations.subList(1, annotations.size());
+
+            }
+
         }.execute();
     }
 
@@ -151,19 +217,24 @@ public class HighlightView extends View {
         float dy = 0.0f;
         float menu_width = menu_bitmap.getWidth();
         float menu_height = menu_bitmap.getHeight();
-        if (menu_width/w >= menu_height/h){
+        if (menu_width / w >= menu_height / h) {
             // scale with aspect ratio to width.
-            scale = w/menu_width;
+            scale = w / menu_width;
             dy = (h - menu_height * scale) / 2.0f;
-        }else{
+        } else {
             // scale by height.
-            scale = h/menu_height;
+            scale = h / menu_height;
             dx = (w - menu_width * scale) / 2.0f;
         }
 
-        Matrix transformation = new Matrix();
-        transformation.preScale(scale, scale);
-        transformation.postTranslate(dx, dy);
+        matrix_wLock.lock();
+        try {
+            transformation = new Matrix();
+            transformation.preScale(scale, scale);
+            transformation.postTranslate(dx, dy);
+        }finally {
+            matrix_wLock.unlock();
+        }
 
         canvas.drawBitmap(menu_bitmap, transformation, bitmap_paint);
     }
@@ -174,6 +245,16 @@ public class HighlightView extends View {
 
         canvas.drawBitmap(bitmap, 0, 0, bitmap_paint);
         canvas.drawPath(path, highlight_paint);
+
+        bound_rLock.lock();
+        try {
+            for (RectF rect : rect_list) {
+                canvas.drawRect(rect, rectf_paint);
+            }
+        } finally {
+            bound_rLock.unlock();
+        }
+
     }
 
     @Override
@@ -181,7 +262,7 @@ public class HighlightView extends View {
         float x = event.getX();
         float y = event.getY();
 
-        switch (event.getAction()){
+        switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 touch_start(x, y);
                 invalidate();
@@ -207,10 +288,10 @@ public class HighlightView extends View {
     }
 
     private void touch_move(float x, float y) {
-        float dx = Math.abs(x-this.x);
-        float dy = Math.abs(y-this.y);
-        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE){
-            path.quadTo(this.x, this.y, (x+this.x)/2, (y+this.y)/2);
+        float dx = Math.abs(x - this.x);
+        float dy = Math.abs(y - this.y);
+        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+            path.quadTo(this.x, this.y, (x + this.x) / 2, (y + this.y) / 2);
             this.x = x;
             this.y = y;
         }
