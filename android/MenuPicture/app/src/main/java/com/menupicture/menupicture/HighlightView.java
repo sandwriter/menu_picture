@@ -43,13 +43,23 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Created by wenjie on 5/15/16.
  */
 public class HighlightView extends View {
+    private class HighlightRectF{
+        public HighlightRectF(RectF rectf, boolean on){
+            this.rectf = rectf;
+            this.on = on;
+        }
+
+        public RectF rectf;
+        public boolean on;
+        public boolean touched;
+    }
+
     private Bitmap bitmap;
     // canvas is used to store all committed previous path.
     private Canvas canvas;
-    private Path path;
-    private Paint highlight_paint;
     private Paint bitmap_paint;
-    private Paint rectf_paint;
+    private Paint rectf_on_paint;
+    private Paint rectf_off_paint;
     private Bitmap menu_bitmap;
 
     // Path current point.
@@ -72,30 +82,28 @@ public class HighlightView extends View {
 
     private Matrix transformation;
 
-    private java.util.ArrayList<RectF> rect_list = new java.util.ArrayList<RectF>();
+    private java.util.ArrayList<HighlightRectF> rect_list = new java.util.ArrayList<HighlightRectF>();
 
     public HighlightView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        path = new Path();
-        highlight_paint = new Paint(Paint.DITHER_FLAG);
-        highlight_paint.setAntiAlias(true);
-        highlight_paint.setColor(Color.RED);
-        highlight_paint.setStyle(Paint.Style.STROKE);
-        highlight_paint.setStrokeJoin(Paint.Join.ROUND);
-        highlight_paint.setStrokeCap(Paint.Cap.SQUARE);
-        highlight_paint.setStrokeWidth(12);
 
         bitmap_paint = new Paint();
         bitmap_paint.setAntiAlias(true);
         bitmap_paint.setFilterBitmap(true);
         bitmap_paint.setDither(true);
 
-        rectf_paint = new Paint(Paint.DITHER_FLAG);
-        rectf_paint.setAntiAlias(true);
-        rectf_paint.setColor(Color.YELLOW);
-        rectf_paint.setStyle(Paint.Style.FILL);
-        rectf_paint.setAlpha(60);
+        rectf_off_paint = new Paint(Paint.DITHER_FLAG);
+        rectf_off_paint.setAntiAlias(true);
+        rectf_off_paint.setColor(Color.YELLOW);
+        rectf_off_paint.setStyle(Paint.Style.FILL);
+        rectf_off_paint.setAlpha(15);
+
+        rectf_on_paint = new Paint(Paint.DITHER_FLAG);
+        rectf_on_paint.setAntiAlias(true);
+        rectf_on_paint.setColor(Color.YELLOW);
+        rectf_on_paint.setStyle(Paint.Style.FILL);
+        rectf_on_paint.setAlpha(100);
+
 
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inDither = true;
@@ -171,7 +179,7 @@ public class HighlightView extends View {
                 try {
                     rect_list.clear();
                     for (EntityAnnotation entity : result) {
-                        rect_list.add(GetRectF(entity.getBoundingPoly().getVertices()));
+                        rect_list.add(new HighlightRectF(GetRectF(entity.getBoundingPoly().getVertices()), false));
                     }
                 } finally {
                     bound_wLock.unlock();
@@ -244,12 +252,16 @@ public class HighlightView extends View {
         super.onDraw(canvas);
 
         canvas.drawBitmap(bitmap, 0, 0, bitmap_paint);
-        canvas.drawPath(path, highlight_paint);
 
         bound_rLock.lock();
         try {
-            for (RectF rect : rect_list) {
-                canvas.drawRect(rect, rectf_paint);
+            for (HighlightRectF rect : rect_list) {
+                boolean on = rect.on ^ rect.touched;
+                if (on) {
+                    canvas.drawRect(rect.rectf, rectf_on_paint);
+                }else{
+                    canvas.drawRect(rect.rectf, rectf_off_paint);
+                }
             }
         } finally {
             bound_rLock.unlock();
@@ -280,31 +292,43 @@ public class HighlightView extends View {
 
     }
 
+    private void touch(float x, float y){
+        bound_wLock.lock();
+        try{
+            for (HighlightRectF rect : rect_list){
+                if (rect.rectf.contains(x, y)){
+                    rect.touched = true;
+                }
+            }
+        }finally {
+            bound_wLock.unlock();
+        }
+    }
+
     private void touch_start(float x, float y) {
-        path.reset();
-        path.moveTo(x, y);
-        this.x = x;
-        this.y = y;
+        touch(x, y);
     }
 
     private void touch_move(float x, float y) {
         float dx = Math.abs(x - this.x);
         float dy = Math.abs(y - this.y);
         if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
-            path.quadTo(this.x, this.y, (x + this.x) / 2, (y + this.y) / 2);
-            this.x = x;
-            this.y = y;
+            touch(x, y);
         }
     }
 
     private void touch_up() {
-        path.lineTo(this.x, this.y);
-        canvas.drawPath(path, highlight_paint);
-
-        RectF bounds = new RectF();
-        path.computeBounds(bounds, true);
-        Log.v(TAG, bounds.toShortString());
-
-        path.reset();
+        // clear all changed bits and permanent the change.
+        bound_wLock.lock();
+        try{
+            for (HighlightRectF rect : rect_list){
+                if (rect.touched){
+                    rect.on = rect.on ^ rect.touched;
+                    rect.touched = false;
+                }
+            }
+        }finally {
+            bound_wLock.unlock();
+        }
     }
 }
