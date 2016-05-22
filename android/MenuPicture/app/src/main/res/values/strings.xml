@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MenuPicture</string>
+    <string name="highlight_tab">Highlight</string>
+    <string name="picture_tab">Picture</string>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="zoom_pan_tab" type="id">Zoom/Pan</item>
+    <item name="highlight_tab" type="id">Highlight</item>
+    <item name="picture_tab" type="id">Pictures</item>
+</resources>

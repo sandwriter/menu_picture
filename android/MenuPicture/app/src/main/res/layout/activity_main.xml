@@ -5,9 +5,51 @@
     android:layout_height="match_parent"
     tools:context="com.menupicture.menupicture.MainActivity">
 
-    <com.menupicture.menupicture.HighlightView
-        android:id="@+id/highlight_view"
-        android:layout_height="match_parent"
+    <TabHost
         android:layout_width="match_parent"
-        />
+        android:layout_height="match_parent"
+        android:id="@+id/tabHost"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TabWidget
+                android:id="@android:id/tabs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"></TabWidget>
+
+            <FrameLayout
+                android:id="@android:id/tabcontent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:id="@+id/linearLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <com.menupicture.menupicture.HighlightView
+                        android:id="@+id/highlight_tab"
+                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/linearLayout2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <com.menupicture.menupicture.HighlightView
+                        android:id="@+id/picture_tab"
+                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"/>
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </TabHost>
 </RelativeLayout>
