@@ -41,7 +41,8 @@ Show pictures for menu item
 20. return image results and add to images.
 21. image with text.
 22. clickable images.
-23. search images at the end of finger move.
+23. ~~search images at the end of finger move.~~
+24. Fetch image from the search result and push to the grid view adapter.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.

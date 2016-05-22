@@ -7,8 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
@@ -21,6 +19,10 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.customsearch.Customsearch;
+import com.google.api.services.customsearch.CustomsearchRequest;
+import com.google.api.services.customsearch.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.model.Search;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
 import com.google.api.services.vision.v1.model.AnnotateImageRequest;
@@ -330,5 +332,46 @@ public class HighlightView extends View {
         }finally {
             bound_wLock.unlock();
         }
+
+        search_picture();
+    }
+
+    private void search_picture() {
+        new AsyncTask<Object, Void, Void>(){
+            @Override
+            protected Void doInBackground(Object... params) {
+                try{
+                    HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
+                    JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+
+                    Customsearch.Builder builder = new Customsearch.Builder(httpTransport, jsonFactory, null);
+                    builder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer(){
+                        @Override
+                        protected void initializeCustomsearchRequest(CustomsearchRequest<?> request) throws IOException {
+                            super.initializeCustomsearchRequest(request);
+                            request.setKey(CLOUD_VISION_API_KEY);
+                            request.set("cx", "000057874177480001711:2ywzhtb3u6q");
+                            request.set("searchType", "image");
+                            request.set("safe", "high");
+                            request.set("num", new Long(1));
+                        }
+                    });
+
+                    Customsearch customSearch = builder.build();
+                    Search searchResult = customSearch.cse().list("grilled steak").execute();
+
+                    Log.v(TAG, searchResult.getItems().get(0).toPrettyString());
+
+                }catch (GoogleJsonResponseException e) {
+                    Log.d(TAG, "failed to make API request because " + e.getContent());
+                } catch (IOException e) {
+                    Log.d(TAG, "failed to make API request because of other IOException " +
+                            e.getMessage());
+                } catch (Exception e) {
+                    Log.d(TAG, "CustomSearch API request failed. Check logs for details. " + e.getMessage());
+                }
+                return null;
+            }
+        }.execute();
     }
 }
