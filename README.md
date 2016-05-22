@@ -35,7 +35,9 @@ Show pictures for menu item
 14. ~~bound view.~~
 15. ~~move finger to enable bounds.~~
 16. optimize some java code.
-17. Add a action bar to change mode, i.e. highlight, pan/move, image.
+17. ~~Add a action bar to change mode, i.e. highlight, pan/move, image.~~
+18. image gallery.
+
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.
