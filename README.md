@@ -44,7 +44,9 @@ Show pictures for menu item
 23. ~~search images at the end of finger move.~~
 24. ~~Fetch image from the search result and push to the grid view adapter.~~
 25. Learn menu item.
-26. Update multiple menu items.
+26. ~~Update multiple menu items.~~
+27. Use line break to distinguish menu items.
+28. If a rect is horizontal right to another one, then they are together. Otherwise, they are not.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.

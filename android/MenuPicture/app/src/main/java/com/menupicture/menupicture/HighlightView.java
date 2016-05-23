@@ -19,6 +19,7 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.StreamingContent;
 import com.google.api.services.customsearch.Customsearch;
 import com.google.api.services.customsearch.CustomsearchRequest;
 import com.google.api.services.customsearch.CustomsearchRequestInitializer;
@@ -36,6 +37,7 @@ import com.google.api.services.vision.v1.model.Vertex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -47,14 +49,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class HighlightView extends View {
     private class HighlightRectF{
-        public HighlightRectF(RectF rectf, boolean on){
+        public HighlightRectF(RectF rectf, boolean on, String word){
             this.rectf = rectf;
             this.on = on;
+            this.word = word;
         }
 
         public RectF rectf;
         public boolean on;
         public boolean touched;
+        public String word;
     }
 
     private Bitmap bitmap;
@@ -71,6 +75,7 @@ public class HighlightView extends View {
     private static final float TOUCH_TOLERANCE = 4;
 
     private static final String CLOUD_VISION_API_KEY = "AIzaSyBFoF4sDsSj6FV8O-cYsyHbU9stfIrACJg";
+    private static final String SCE_ID = "000057874177480001711:2ywzhtb3u6q";
 
     private static final String TAG = "HighlightView";
 
@@ -182,7 +187,7 @@ public class HighlightView extends View {
                 try {
                     rect_list.clear();
                     for (EntityAnnotation entity : result) {
-                        rect_list.add(new HighlightRectF(GetRectF(entity.getBoundingPoly().getVertices()), false));
+                        rect_list.add(new HighlightRectF(GetRectF(entity.getBoundingPoly().getVertices()), false, entity.getDescription()));
                     }
                 } finally {
                     bound_wLock.unlock();
@@ -338,9 +343,10 @@ public class HighlightView extends View {
     }
 
     private void search_picture() {
-        new AsyncTask<Object, Void, Void>(){
+        new AsyncTask<Object, Void, ArrayList<ImageItem>>(){
             @Override
-            protected Void doInBackground(Object... params) {
+            protected ArrayList<ImageItem> doInBackground(Object... params) {
+                ArrayList<ImageItem> image_list = new ArrayList<ImageItem>();
                 try{
                     HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
                     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
@@ -351,19 +357,21 @@ public class HighlightView extends View {
                         protected void initializeCustomsearchRequest(CustomsearchRequest<?> request) throws IOException {
                             super.initializeCustomsearchRequest(request);
                             request.setKey(CLOUD_VISION_API_KEY);
-                            request.set("cx", "000057874177480001711:2ywzhtb3u6q");
+                            request.set("cx", SCE_ID);
                             request.set("searchType", "image");
                             request.set("safe", "high");
-                            request.set("num", new Long(1));
+                            request.set("num", new Long(3));
                         }
                     });
 
                     Customsearch customSearch = builder.build();
-                    Search searchResult = customSearch.cse().list("grilled steak").execute();
 
-                    Log.v(TAG, searchResult.getItems().get(0).toPrettyString());
+                    ArrayList<String> menu_list = getMenuList(rect_list);
 
-                    updateImageList(searchResult);
+                    for (String menu: menu_list) {
+                        Search searchResult = customSearch.cse().list(menu).execute();
+                        image_list.addAll(getImageList(searchResult, menu));
+                    }
                 }catch (GoogleJsonResponseException e) {
                     Log.d(TAG, "failed to make API request because " + e.getContent());
                 } catch (IOException e) {
@@ -372,24 +380,35 @@ public class HighlightView extends View {
                 } catch (Exception e) {
                     Log.d(TAG, "CustomSearch API request failed. Check logs for details. " + e.getMessage());
                 }
-                return null;
+                return image_list;
             }
 
-            protected void onPostExecute() {
-                MainActivity.gridAdapter.notifyDataSetChanged();
+            private ArrayList<String> getMenuList(ArrayList<HighlightRectF> rect_list) {
+                ArrayList<String> menu_list = new ArrayList<String>();
+                menu_list.add("grilled steak");
+                menu_list.add("roasted pork");
+                return menu_list;
             }
 
-            private void updateImageList(Search searchResult) {
+            protected void onPostExecute(ArrayList<ImageItem> image_list) {
                 MainActivity.imageListLock.writeLock().lock();
                 try {
                     MainActivity.imageList.clear();
-                    for (Result result : searchResult.getItems()) {
-                        MainActivity.imageList.add(new ImageItem(result.getLink(), "grilled steak"));
-                    }
-
+                    MainActivity.imageList.addAll(image_list);
                 }finally {
                     MainActivity.imageListLock.writeLock().unlock();
                 }
+                MainActivity.gridAdapter.notifyDataSetChanged();
+            }
+
+            private ArrayList<ImageItem> getImageList(Search searchResult, String menu) {
+                ArrayList<ImageItem> image_list = new ArrayList<ImageItem>();
+
+                for (Result result : searchResult.getItems()) {
+                    image_list.add(new ImageItem(result.getLink(), menu));
+                }
+
+                return image_list;
             }
         }.execute();
     }
