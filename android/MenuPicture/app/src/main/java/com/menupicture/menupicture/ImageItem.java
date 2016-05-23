@@ -6,21 +6,21 @@ import android.graphics.Bitmap;
  * Created by wenjie on 5/22/16.
  */
 public class ImageItem {
-    private Bitmap image;
+    private String imageUrl;
     private String title;
 
-    public ImageItem(Bitmap image, String title) {
+    public ImageItem(String imageUrl, String title) {
         super();
-        this.image = image;
+        this.imageUrl = imageUrl;
         this.title = title;
     }
 
-    public Bitmap getImage() {
-        return image;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImage(Bitmap image) {
-        this.image = image;
+    public void setImage(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public String getTitle() {

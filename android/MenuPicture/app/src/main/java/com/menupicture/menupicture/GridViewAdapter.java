@@ -9,6 +9,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.koushikdutta.ion.Ion;
+
 import java.util.ArrayList;
 
 /**
@@ -44,7 +46,8 @@ public class GridViewAdapter extends ArrayAdapter {
 
         ImageItem item = data.get(position);
         holder.imageTitle.setText(item.getTitle());
-        holder.image.setImageBitmap(item.getImage());
+        // holder.image.setImageBitmap(item.getImage());
+        Ion.with(holder.image).placeholder(R.drawable.loading).load(item.getImageUrl());
         return row;
     }
     static class ViewHolder {

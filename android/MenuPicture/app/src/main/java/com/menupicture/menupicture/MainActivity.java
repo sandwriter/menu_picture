@@ -9,12 +9,18 @@ import android.widget.GridView;
 import android.widget.TabHost;
 
 import java.util.ArrayList;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 public class MainActivity extends Activity {
 
     private GridView gridView;
-    private GridViewAdapter gridAdapter;
+
+    public static GridViewAdapter gridAdapter;
+
+    public static final ReadWriteLock imageListLock = new ReentrantReadWriteLock();
+    public static ArrayList<ImageItem> imageList = new ArrayList<ImageItem>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,18 +43,7 @@ public class MainActivity extends Activity {
         tab_host.addTab(spec);
 
         gridView = (GridView) findViewById(R.id.picture_tab);
-        gridAdapter = new GridViewAdapter(this, R.layout.grid_item, getData());
+        gridAdapter = new GridViewAdapter(this, R.layout.grid_item, imageList);
         gridView.setAdapter(gridAdapter);
-    }
-
-    // Prepare some dummy data for gridview
-    private ArrayList<ImageItem> getData() {
-        final ArrayList<ImageItem> imageItems = new ArrayList<>();
-        TypedArray imgs = getResources().obtainTypedArray(R.array.image_ids);
-        for (int i = 0; i < imgs.length(); i++) {
-            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), imgs.getResourceId(i, -1));
-            imageItems.add(new ImageItem(bitmap, "Image#" + i));
-        }
-        return imageItems;
     }
 }

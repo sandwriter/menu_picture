@@ -22,6 +22,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.customsearch.Customsearch;
 import com.google.api.services.customsearch.CustomsearchRequest;
 import com.google.api.services.customsearch.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.model.Result;
 import com.google.api.services.customsearch.model.Search;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
@@ -362,6 +363,7 @@ public class HighlightView extends View {
 
                     Log.v(TAG, searchResult.getItems().get(0).toPrettyString());
 
+                    updateImageList(searchResult);
                 }catch (GoogleJsonResponseException e) {
                     Log.d(TAG, "failed to make API request because " + e.getContent());
                 } catch (IOException e) {
@@ -371,6 +373,23 @@ public class HighlightView extends View {
                     Log.d(TAG, "CustomSearch API request failed. Check logs for details. " + e.getMessage());
                 }
                 return null;
+            }
+
+            protected void onPostExecute() {
+                MainActivity.gridAdapter.notifyDataSetChanged();
+            }
+
+            private void updateImageList(Search searchResult) {
+                MainActivity.imageListLock.writeLock().lock();
+                try {
+                    MainActivity.imageList.clear();
+                    for (Result result : searchResult.getItems()) {
+                        MainActivity.imageList.add(new ImageItem(result.getLink(), "grilled steak"));
+                    }
+
+                }finally {
+                    MainActivity.imageListLock.writeLock().unlock();
+                }
             }
         }.execute();
     }

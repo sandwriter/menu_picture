@@ -30,4 +30,6 @@ dependencies {
 
     compile 'com.google.apis:google-api-services-vision:v1-rev2-1.21.0'
     compile 'com.google.apis:google-api-services-customsearch:v1-rev51-1.22.0'
+
+    compile group: 'com.koushikdutta.ion', name: 'ion', version: '2.1.7'
 }
