@@ -46,7 +46,9 @@ Show pictures for menu item
 25. Learn menu item.
 26. ~~Update multiple menu items.~~
 27. Use line break to distinguish menu items.
-28. If a rect is horizontal right to another one, then they are together. Otherwise, they are not.
+28. ~~If a rect is horizontal right to another one, then they are together. Otherwise, they are not.~~
+29. Location as search context.
+30. Camera to take picture.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.
@@ -54,3 +56,7 @@ Show pictures for menu item
 # Reference
 1. [PIL](https://pillow.readthedocs.io/en/latest/handbook/index.html)
 2. [PIL Annotation](http://effbot.org/imagingbook/imagedraw.htm)
+
+# Notes
+## Detect menu item
+There is currently no good way to detect menu item. I am taking heuristic approach to say two boundin boxes should distance each other by no more than 2 characters and the slope is less than 0.1 (tanh). I am sure there are a million way a photo can break this constraints :(

@@ -7,8 +7,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.AsyncTask;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -19,7 +21,6 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.StreamingContent;
 import com.google.api.services.customsearch.Customsearch;
 import com.google.api.services.customsearch.CustomsearchRequest;
 import com.google.api.services.customsearch.CustomsearchRequestInitializer;
@@ -37,8 +38,8 @@ import com.google.api.services.vision.v1.model.Vertex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -48,11 +49,22 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Created by wenjie on 5/15/16.
  */
 public class HighlightView extends View {
-    private class HighlightRectF{
-        public HighlightRectF(RectF rectf, boolean on, String word){
+    private class HighlightRectF implements Comparable<HighlightRectF> {
+        public HighlightRectF(RectF rectf, boolean on, String word) {
             this.rectf = rectf;
             this.on = on;
             this.word = word;
+        }
+
+        @Override
+        public int compareTo(HighlightRectF other) {
+            if (rectf.centerX() > other.rectf.centerX()) {
+                return 1;
+            } else if (rectf.centerX() < other.rectf.centerX()) {
+                return -1;
+            } else {
+                return 0;
+            }
         }
 
         public RectF rectf;
@@ -204,9 +216,9 @@ public class HighlightView extends View {
                 rectf.set(left, top, right, bottom);
 
                 matrix_rLock.lock();
-                try{
+                try {
                     transformation.mapRect(rectf);
-                }finally {
+                } finally {
                     matrix_rLock.unlock();
                 }
                 return rectf;
@@ -248,7 +260,7 @@ public class HighlightView extends View {
             transformation = new Matrix();
             transformation.preScale(scale, scale);
             transformation.postTranslate(dx, dy);
-        }finally {
+        } finally {
             matrix_wLock.unlock();
         }
 
@@ -267,7 +279,7 @@ public class HighlightView extends View {
                 boolean on = rect.on ^ rect.touched;
                 if (on) {
                     canvas.drawRect(rect.rectf, rectf_on_paint);
-                }else{
+                } else {
                     canvas.drawRect(rect.rectf, rectf_off_paint);
                 }
             }
@@ -300,15 +312,15 @@ public class HighlightView extends View {
 
     }
 
-    private void touch(float x, float y){
+    private void touch(float x, float y) {
         bound_wLock.lock();
-        try{
-            for (HighlightRectF rect : rect_list){
-                if (rect.rectf.contains(x, y)){
+        try {
+            for (HighlightRectF rect : rect_list) {
+                if (rect.rectf.contains(x, y)) {
                     rect.touched = true;
                 }
             }
-        }finally {
+        } finally {
             bound_wLock.unlock();
         }
     }
@@ -328,14 +340,14 @@ public class HighlightView extends View {
     private void touch_up() {
         // clear all changed bits and permanent the change.
         bound_wLock.lock();
-        try{
-            for (HighlightRectF rect : rect_list){
-                if (rect.touched){
+        try {
+            for (HighlightRectF rect : rect_list) {
+                if (rect.touched) {
                     rect.on = rect.on ^ rect.touched;
                     rect.touched = false;
                 }
             }
-        }finally {
+        } finally {
             bound_wLock.unlock();
         }
 
@@ -343,16 +355,16 @@ public class HighlightView extends View {
     }
 
     private void search_picture() {
-        new AsyncTask<Object, Void, ArrayList<ImageItem>>(){
+        new AsyncTask<Object, Void, ArrayList<ImageItem>>() {
             @Override
             protected ArrayList<ImageItem> doInBackground(Object... params) {
                 ArrayList<ImageItem> image_list = new ArrayList<ImageItem>();
-                try{
+                try {
                     HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
                     JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
 
                     Customsearch.Builder builder = new Customsearch.Builder(httpTransport, jsonFactory, null);
-                    builder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer(){
+                    builder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer() {
                         @Override
                         protected void initializeCustomsearchRequest(CustomsearchRequest<?> request) throws IOException {
                             super.initializeCustomsearchRequest(request);
@@ -368,26 +380,78 @@ public class HighlightView extends View {
 
                     ArrayList<String> menu_list = getMenuList(rect_list);
 
-                    for (String menu: menu_list) {
+                    for (String menu : menu_list) {
+                        Log.v(TAG, "menu:" + menu);
                         Search searchResult = customSearch.cse().list(menu).execute();
-                        image_list.addAll(getImageList(searchResult, menu));
+                        if (searchResult != null){
+                            image_list.addAll(getImageList(searchResult, menu));
+                        }
                     }
-                }catch (GoogleJsonResponseException e) {
+                } catch (GoogleJsonResponseException e) {
                     Log.d(TAG, "failed to make API request because " + e.getContent());
                 } catch (IOException e) {
                     Log.d(TAG, "failed to make API request because of other IOException " +
                             e.getMessage());
-                } catch (Exception e) {
-                    Log.d(TAG, "CustomSearch API request failed. Check logs for details. " + e.getMessage());
                 }
                 return image_list;
             }
 
             private ArrayList<String> getMenuList(ArrayList<HighlightRectF> rect_list) {
                 ArrayList<String> menu_list = new ArrayList<String>();
-                menu_list.add("grilled steak");
-                menu_list.add("roasted pork");
+
+                ArrayList<HighlightRectF> rect_on_list = new ArrayList<HighlightRectF>();
+                bound_rLock.lock();
+                try {
+                    for (HighlightRectF rect: rect_list){
+                        if (rect.on){
+                            rect_on_list.add(rect);
+                        }
+                    }
+                } finally {
+                    bound_rLock.unlock();
+                }
+
+                Collections.sort(rect_on_list);
+                while (!rect_on_list.isEmpty()) {
+                    String menu = getMenu(rect_on_list);
+                    menu_list.add(menu);
+                }
+
                 return menu_list;
+            }
+
+            private String getMenu(ArrayList<HighlightRectF> rect_list_copy) {
+                ArrayList<String> menu_token_list = new ArrayList<String>();
+                HighlightRectF begin = rect_list_copy.get(0);
+                rect_list_copy.remove(0);
+                menu_token_list.add(begin.word);
+                HighlightRectF next;
+                while ((next = findAndRemoveNextToken(begin, rect_list_copy)) != null) {
+                    menu_token_list.add(next.word);
+                    begin = next;
+                }
+                return TextUtils.join(" ", menu_token_list);
+            }
+
+            // This function will find the word in a menu item next to begin, by looking at the
+            // slope and the distance heuristically.
+            // TODO(wenjiesha) Train a vision/language model to detect menu item E2E.
+            private HighlightRectF findAndRemoveNextToken(
+                    HighlightRectF begin, ArrayList<HighlightRectF> rect_list_copy) {
+                double char_size = begin.rectf.width() / begin.word.length();
+                for(int i = 0; i < rect_list_copy.size(); i++){
+                    HighlightRectF rect = rect_list_copy.get(i);
+                    if (rect.rectf.left - begin.rectf.right < 2*char_size
+                            && rect.rectf.centerX() > begin.rectf.centerX()
+                            && Math.abs((rect.rectf.centerY() - begin.rectf.centerY())
+                            /(rect.rectf.centerX()-begin.rectf.centerX())) < 0.1){
+                        // slope < 0.1 and less than 2 char size to the right and begin is the best
+                        // candidate preceding the chosen token.
+                        rect_list_copy.remove(i);
+                        return rect;
+                    }
+                }
+                return null;
             }
 
             protected void onPostExecute(ArrayList<ImageItem> image_list) {
@@ -395,7 +459,7 @@ public class HighlightView extends View {
                 try {
                     MainActivity.imageList.clear();
                     MainActivity.imageList.addAll(image_list);
-                }finally {
+                } finally {
                     MainActivity.imageListLock.writeLock().unlock();
                 }
                 MainActivity.gridAdapter.notifyDataSetChanged();
