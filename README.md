@@ -50,8 +50,8 @@ Show pictures for menu item
 29. Location as search context.
 30. Camera to take picture.
 31. zoom and pan around.
-32. floating button.
-33. floating button color.
+32. ~~floating button.~~
+33. ~~floating button color.~~
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.
