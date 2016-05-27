@@ -52,6 +52,7 @@ Show pictures for menu item
 31. zoom and pan around.
 32. ~~floating button.~~
 33. ~~floating button color.~~
+34. refactor highlight view to do most stuff in set function instead of constructor.
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.

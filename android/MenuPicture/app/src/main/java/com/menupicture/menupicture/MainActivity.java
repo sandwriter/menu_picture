@@ -1,6 +1,8 @@
 package com.menupicture.menupicture;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.widget.GridView;
 import android.widget.TabHost;
@@ -8,6 +10,9 @@ import android.widget.TabHost;
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import it.sephiroth.android.library.imagezoom.ImageViewTouch;
+import it.sephiroth.android.library.imagezoom.ImageViewTouchBase;
 
 
 public class MainActivity extends Activity {
@@ -19,6 +24,10 @@ public class MainActivity extends Activity {
     public static final ReadWriteLock imageListLock = new ReentrantReadWriteLock();
     public static ArrayList<ImageItem> imageList = new ArrayList<ImageItem>();
 
+    ImageViewTouch touchView;
+
+    public static Bitmap menu_bitmap;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,7 +38,7 @@ public class MainActivity extends Activity {
 
         //Highlight, zoom, pan around
         TabHost.TabSpec spec = tab_host.newTabSpec("Highlight Tab");
-        spec.setContent(R.id.highlight_tab);
+        spec.setContent(R.id.frame_layout);
         spec.setIndicator(getResources().getString(R.string.highlight_tab));
         tab_host.addTab(spec);
 
@@ -42,5 +51,16 @@ public class MainActivity extends Activity {
         gridView = (GridView) findViewById(R.id.picture_tab);
         gridAdapter = new GridViewAdapter(this, R.layout.grid_item, imageList);
         gridView.setAdapter(gridAdapter);
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inDither = true;
+        options.inScaled = true;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.two_line, options);
+
+        touchView = (ImageViewTouch) findViewById(R.id.touch_image);
+        touchView.setDisplayType(ImageViewTouchBase.DisplayType.FIT_IF_BIGGER);
+
+        touchView.setImageBitmap(menu_bitmap, null, -1, -1);
     }
 }

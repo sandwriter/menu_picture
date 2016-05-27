@@ -36,20 +36,31 @@
                     android:layout_height="match_parent"
                     android:theme="@style/AppTheme">
 
-                    <com.menupicture.menupicture.HighlightView
-                        android:id="@+id/highlight_tab"
-                        android:layout_height="match_parent"
-                        android:layout_width="match_parent"/>
+                    <FrameLayout
+                        xmlns:android="http://schemas.android.com/apk/res/android"
+                        android:id="@+id/frame_layout"
+                        android:layout_width="fill_parent"
+                        android:layout_height="wrap_content">
+                        <com.menupicture.menupicture.HighlightView
+                            android:id="@+id/highlight_tab"
+                            android:layout_height="match_parent"
+                            android:layout_width="match_parent"/>
+                        <it.sephiroth.android.library.imagezoom.ImageViewTouch
+                            android:id="@+id/touch_image"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"/>
+                    </FrameLayout>
 
                     <android.support.design.widget.FloatingActionButton
                         android:layout_height="wrap_content"
                         android:layout_width="wrap_content"
                         android:layout_gravity="bottom|right"
                         android:layout_margin="@dimen/fab_margin"
-                        app:layout_anchor="@id/highlight_tab"
+                        app:layout_anchor="@id/frame_layout"
                         app:layout_anchorGravity="bottom|right|end"
                         android:src="@drawable/eye"
                         android:clickable="true"/>
+
                 </android.support.design.widget.CoordinatorLayout>
 
                 <LinearLayout
