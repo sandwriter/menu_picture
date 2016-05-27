@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.view.View;
 import android.widget.GridView;
 import android.widget.TabHost;
 
@@ -24,7 +26,11 @@ public class MainActivity extends Activity {
     public static final ReadWriteLock imageListLock = new ReentrantReadWriteLock();
     public static ArrayList<ImageItem> imageList = new ArrayList<ImageItem>();
 
-    ImageViewTouch touchView;
+    private ImageViewTouch touchView;
+    private HighlightView highlightView;
+    private FloatingActionButton fab;
+
+    private boolean touch_mode;
 
     public static Bitmap menu_bitmap;
 
@@ -62,5 +68,25 @@ public class MainActivity extends Activity {
         touchView.setDisplayType(ImageViewTouchBase.DisplayType.FIT_IF_BIGGER);
 
         touchView.setImageBitmap(menu_bitmap, null, -1, -1);
+
+        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
+
+        touch_mode = true;
+
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                if (touch_mode) {
+                    highlightView.bringToFront();
+                    fab.setImageResource(R.drawable.highlight);
+                    touch_mode = false;
+                }else{
+                    touchView.bringToFront();
+                    fab.setImageResource(R.drawable.eye);
+                    touch_mode = true;
+                }
+            }
+        });
     }
 }
