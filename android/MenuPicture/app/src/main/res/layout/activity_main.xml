@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.menupicture.menupicture.MainActivity">
 
     <TabHost
@@ -27,16 +28,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <LinearLayout
-                    android:id="@+id/linearLayout"
+                <android.support.design.widget.CoordinatorLayout
+                    android:id="@+id/coordinator_layout"
+                    xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="vertical">
+                    android:theme="@style/AppTheme">
+
                     <com.menupicture.menupicture.HighlightView
                         android:id="@+id/highlight_tab"
                         android:layout_height="match_parent"
                         android:layout_width="match_parent"/>
-                </LinearLayout>
+
+                    <android.support.design.widget.FloatingActionButton
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="bottom|right"
+                        android:layout_margin="@dimen/fab_margin"
+                        app:layout_anchor="@id/highlight_tab"
+                        app:layout_anchorGravity="bottom|right|end"
+                        android:src="@drawable/eye"
+                        android:clickable="true"/>
+                </android.support.design.widget.CoordinatorLayout>
 
                 <LinearLayout
                     android:id="@+id/linearLayout2"

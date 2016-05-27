@@ -1,9 +1,6 @@
 package com.menupicture.menupicture;
 
 import android.app.Activity;
-import android.content.res.TypedArray;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.widget.GridView;
 import android.widget.TabHost;
