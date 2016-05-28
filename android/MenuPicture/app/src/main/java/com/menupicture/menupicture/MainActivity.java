@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
 
     private boolean touch_mode;
 
-    public static Bitmap menu_bitmap;
+    private static Bitmap menu_bitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +70,7 @@ public class MainActivity extends Activity {
         touchView.setImageBitmap(menu_bitmap, null, -1, -1);
 
         highlightView = (HighlightView) findViewById(R.id.highlight_tab);
+        highlightView.setMenuBitmap(menu_bitmap);
 
         touch_mode = true;
 
@@ -88,5 +89,9 @@ public class MainActivity extends Activity {
                 }
             }
         });
+    }
+
+    public static Bitmap GetMenuBitmap(){
+        return menu_bitmap;
     }
 }

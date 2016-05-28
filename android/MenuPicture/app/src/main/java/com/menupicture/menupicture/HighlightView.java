@@ -73,13 +73,13 @@ public class HighlightView extends View {
         public String word;
     }
 
+    private Bitmap menu_bitmap;
     private Bitmap bitmap;
     // canvas is used to store all committed previous path.
     private Canvas canvas;
     private Paint bitmap_paint;
     private Paint rectf_on_paint;
     private Paint rectf_off_paint;
-    private Bitmap menu_bitmap;
 
     // Path current point.
     private float x;
@@ -123,14 +123,11 @@ public class HighlightView extends View {
         rectf_on_paint.setColor(Color.YELLOW);
         rectf_on_paint.setStyle(Paint.Style.FILL);
         rectf_on_paint.setAlpha(100);
+    }
 
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inDither = true;
-        options.inScaled = true;
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-
-        menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.two_line, options);
+    public void setMenuBitmap(final Bitmap menu_bitmap){
+        this.menu_bitmap = menu_bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        invalidate();
 
         new AsyncTask<Object, Void, List<EntityAnnotation>>() {
             @Override
@@ -264,7 +261,9 @@ public class HighlightView extends View {
             matrix_wLock.unlock();
         }
 
-        canvas.drawBitmap(menu_bitmap, transformation, bitmap_paint);
+        if(menu_bitmap != null) {
+            canvas.drawBitmap(menu_bitmap, transformation, bitmap_paint);
+        }
     }
 
     @Override

@@ -52,7 +52,7 @@ Show pictures for menu item
 31. zoom and pan around.
 32. ~~floating button.~~
 33. ~~floating button color.~~
-34. refactor highlight view to do most stuff in set function instead of constructor.
+34. ~~refactor highlight view to do most stuff in set function instead of constructor.~~
 35. fix the error warning for package.
 36. ~~switch highlight view with touch view.~~
 37. ~~switch back/forth with icon change.~~
