@@ -3,6 +3,7 @@ package com.menupicture.menupicture;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
@@ -88,6 +89,7 @@ public class MainActivity extends Activity {
                     touch_mode = false;
                 }else{
                     highlightView.reset();
+                    touchView.setImageBitmap(highlightView.getFinalBitmap(), touchView.getDisplayMatrix(), -1, -1);
                     touchView.bringToFront();
                     fab.setImageResource(R.drawable.eye);
                     touch_mode = true;

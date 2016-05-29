@@ -57,8 +57,9 @@ Show pictures for menu item
 36. ~~switch highlight view with touch view.~~
 37. ~~switch back/forth with icon change.~~
 38. ~~sync bitmap when switching back and forth.~~
-39. sync highlight when switching back and forth.
+39. ~~sync highlight when switching back and forth.~~
 40. slight black ground color alignment.
+41. refactor the code to be more readable.
 
 
 # Bugs

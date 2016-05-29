@@ -35,6 +35,8 @@ import com.google.api.services.vision.v1.model.Image;
 import com.google.api.services.vision.v1.model.Vertex;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,9 +74,9 @@ public class HighlightView extends View {
     }
 
     private Bitmap menu_bitmap;
-    private Bitmap bitmap;
+    private Bitmap finalBitmap;
     // canvas is used to store all committed previous path.
-    private Canvas canvas;
+    private Canvas finalCanvas;
     private Paint bitmap_paint;
     private Paint rectf_on_paint;
     private Paint rectf_off_paint;
@@ -102,6 +104,7 @@ public class HighlightView extends View {
 
     private Matrix transformation = new Matrix();
     private Matrix baseTransformation;
+    private Matrix inverseTransformation = new Matrix();
 
     private java.util.ArrayList<HighlightRectF> rect_list = new java.util.ArrayList<HighlightRectF>();
 
@@ -131,9 +134,9 @@ public class HighlightView extends View {
     public void setMatrix(final Matrix matrix){
         matrix_wLock.lock();
         try {
-//            this.transformation = matrix;
             transformation = new Matrix(baseTransformation);
             transformation.postConcat(matrix);
+            transformation.invert(inverseTransformation);
         }finally {
             matrix_wLock.unlock();
         }
@@ -267,6 +270,9 @@ public class HighlightView extends View {
         baseTransformation = new Matrix();
         baseTransformation.preScale(scale, scale);
         baseTransformation.postTranslate(dx, dy);
+
+        finalBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        finalCanvas = new Canvas(finalBitmap);
     }
 
     @Override
@@ -280,7 +286,6 @@ public class HighlightView extends View {
         }
 
         canvas.drawBitmap(menu_bitmap, transformation, bitmap_paint);
-
         bound_rLock.lock();
         try {
             for (HighlightRectF rect : rect_list) {
@@ -296,7 +301,26 @@ public class HighlightView extends View {
         } finally {
             bound_rLock.unlock();
         }
+    }
 
+    public Bitmap getFinalBitmap(){
+        finalCanvas.drawBitmap(menu_bitmap, baseTransformation, bitmap_paint);
+        bound_rLock.lock();
+        try {
+            for (HighlightRectF rect : rect_list) {
+                RectF rectf = new RectF();
+                baseTransformation.mapRect(rectf, rect.rectf);
+                boolean on = rect.on ^ rect.touched;
+                if (on) {
+                    finalCanvas.drawRect(rectf, rectf_on_paint);
+                } else {
+                    finalCanvas.drawRect(rectf, rectf_off_paint);
+                }
+            }
+        } finally {
+            bound_rLock.unlock();
+        }
+        return finalBitmap;
     }
 
     // Clear the canvas.
@@ -333,10 +357,7 @@ public class HighlightView extends View {
         float[] src_pts = new float[2];
         src_pts[0] = x;
         src_pts[1] = y;
-        Matrix inverseTransformation = new Matrix();
-        transformation.invert(inverseTransformation);
         inverseTransformation.mapPoints(dest_pts, src_pts);
-        Log.v(TAG, "x:" + dest_pts[0] + " y:" + dest_pts[1]);
         bound_wLock.lock();
         try {
             for (HighlightRectF rect : rect_list) {
