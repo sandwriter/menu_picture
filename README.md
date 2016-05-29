@@ -60,6 +60,11 @@ Show pictures for menu item
 39. ~~sync highlight when switching back and forth.~~
 40. slight black ground color alignment.
 41. refactor the code to be more readable.
+42. remove fab on picture tab.
+43. Unicode support
+44. fab to pop a list
+45. fix initial size difference.
+46. progress bar.
 
 
 # Bugs

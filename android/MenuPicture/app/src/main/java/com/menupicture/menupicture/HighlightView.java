@@ -229,13 +229,6 @@ public class HighlightView extends View {
                 int right = vertices.get(2).getX();
                 int bottom = vertices.get(2).getY();
                 rectf.set(left, top, right, bottom);
-
-                matrix_rLock.lock();
-                try {
-                    transformation.mapRect(rectf);
-                } finally {
-                    matrix_rLock.unlock();
-                }
                 return rectf;
             }
 

@@ -65,15 +65,15 @@ public class MainActivity extends Activity {
         options.inDither = true;
         options.inScaled = true;
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.two_line, options);
-
-        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
-        highlightView.setMenuBitmap(menu_bitmap);
+        menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.indian2, options);
 
         touchView = (ImageViewTouch) findViewById(R.id.touch_image);
         touchView.setDisplayType(ImageViewTouchBase.DisplayType.FIT_IF_BIGGER);
-
         touchView.setImageBitmap(menu_bitmap, null, -1, -1);
+
+        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
+        highlightView.setMenuBitmap(menu_bitmap);
+        highlightView.setMatrix(touchView.getDisplayMatrix());
 
         touch_mode = true;
 
