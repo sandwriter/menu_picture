@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.util.Log;
 import android.view.View;
 import android.widget.GridView;
 import android.widget.TabHost;
@@ -18,6 +19,7 @@ import it.sephiroth.android.library.imagezoom.ImageViewTouchBase;
 
 
 public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
 
     private GridView gridView;
 
@@ -64,13 +66,13 @@ public class MainActivity extends Activity {
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.two_line, options);
 
+        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
+        highlightView.setMenuBitmap(menu_bitmap);
+
         touchView = (ImageViewTouch) findViewById(R.id.touch_image);
         touchView.setDisplayType(ImageViewTouchBase.DisplayType.FIT_IF_BIGGER);
 
         touchView.setImageBitmap(menu_bitmap, null, -1, -1);
-
-        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
-        highlightView.setMenuBitmap(menu_bitmap);
 
         touch_mode = true;
 
@@ -79,10 +81,13 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 if (touch_mode) {
+                    Log.v(TAG, touchView.getDisplayMatrix().toShortString());
+                    highlightView.setMatrix(touchView.getDisplayMatrix());
                     highlightView.bringToFront();
                     fab.setImageResource(R.drawable.highlight);
                     touch_mode = false;
                 }else{
+                    highlightView.reset();
                     touchView.bringToFront();
                     fab.setImageResource(R.drawable.eye);
                     touch_mode = true;

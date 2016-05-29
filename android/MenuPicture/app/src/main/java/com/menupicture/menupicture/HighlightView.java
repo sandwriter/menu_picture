@@ -2,12 +2,10 @@ package com.menupicture.menupicture;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.text.TextUtils;
@@ -81,6 +79,8 @@ public class HighlightView extends View {
     private Paint rectf_on_paint;
     private Paint rectf_off_paint;
 
+    private boolean reset;
+
     // Path current point.
     private float x;
     private float y;
@@ -100,12 +100,15 @@ public class HighlightView extends View {
     private final Lock matrix_rLock = matrix_lock.readLock();
     private final Lock matrix_wLock = matrix_lock.writeLock();
 
-    private Matrix transformation;
+    private Matrix transformation = new Matrix();
+    private Matrix baseTransformation;
 
     private java.util.ArrayList<HighlightRectF> rect_list = new java.util.ArrayList<HighlightRectF>();
 
     public HighlightView(Context context, AttributeSet attrs) {
         super(context, attrs);
+
+        reset = false;
 
         bitmap_paint = new Paint();
         bitmap_paint.setAntiAlias(true);
@@ -125,8 +128,20 @@ public class HighlightView extends View {
         rectf_on_paint.setAlpha(100);
     }
 
+    public void setMatrix(final Matrix matrix){
+        matrix_wLock.lock();
+        try {
+//            this.transformation = matrix;
+            transformation = new Matrix(baseTransformation);
+            transformation.postConcat(matrix);
+        }finally {
+            matrix_wLock.unlock();
+        }
+        invalidate();
+    }
+
     public void setMenuBitmap(final Bitmap menu_bitmap){
-        this.menu_bitmap = menu_bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        this.menu_bitmap = menu_bitmap;
         invalidate();
 
         new AsyncTask<Object, Void, List<EntityAnnotation>>() {
@@ -234,9 +249,6 @@ public class HighlightView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        canvas = new Canvas(bitmap);
-
         float scale = 1.0f;
         float dx = 0.0f;
         float dy = 0.0f;
@@ -252,40 +264,45 @@ public class HighlightView extends View {
             dx = (w - menu_width * scale) / 2.0f;
         }
 
-        matrix_wLock.lock();
-        try {
-            transformation = new Matrix();
-            transformation.preScale(scale, scale);
-            transformation.postTranslate(dx, dy);
-        } finally {
-            matrix_wLock.unlock();
-        }
-
-        if(menu_bitmap != null) {
-            canvas.drawBitmap(menu_bitmap, transformation, bitmap_paint);
-        }
+        baseTransformation = new Matrix();
+        baseTransformation.preScale(scale, scale);
+        baseTransformation.postTranslate(dx, dy);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        canvas.drawBitmap(bitmap, 0, 0, bitmap_paint);
+        if (reset){
+            canvas.drawColor(Color.BLACK);
+            reset = false;
+            return;
+        }
+
+        canvas.drawBitmap(menu_bitmap, transformation, bitmap_paint);
 
         bound_rLock.lock();
         try {
             for (HighlightRectF rect : rect_list) {
+                RectF rectf = new RectF();
+                transformation.mapRect(rectf, rect.rectf);
                 boolean on = rect.on ^ rect.touched;
                 if (on) {
-                    canvas.drawRect(rect.rectf, rectf_on_paint);
+                    canvas.drawRect(rectf, rectf_on_paint);
                 } else {
-                    canvas.drawRect(rect.rectf, rectf_off_paint);
+                    canvas.drawRect(rectf, rectf_off_paint);
                 }
             }
         } finally {
             bound_rLock.unlock();
         }
 
+    }
+
+    // Clear the canvas.
+    public void reset(){
+        this.reset = true;
+        invalidate();
     }
 
     @Override
@@ -312,10 +329,18 @@ public class HighlightView extends View {
     }
 
     private void touch(float x, float y) {
+        float[] dest_pts = new float[2];
+        float[] src_pts = new float[2];
+        src_pts[0] = x;
+        src_pts[1] = y;
+        Matrix inverseTransformation = new Matrix();
+        transformation.invert(inverseTransformation);
+        inverseTransformation.mapPoints(dest_pts, src_pts);
+        Log.v(TAG, "x:" + dest_pts[0] + " y:" + dest_pts[1]);
         bound_wLock.lock();
         try {
             for (HighlightRectF rect : rect_list) {
-                if (rect.rectf.contains(x, y)) {
+                if (rect.rectf.contains(dest_pts[0], dest_pts[1])) {
                     rect.touched = true;
                 }
             }

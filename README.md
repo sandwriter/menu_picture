@@ -56,8 +56,10 @@ Show pictures for menu item
 35. fix the error warning for package.
 36. ~~switch highlight view with touch view.~~
 37. ~~switch back/forth with icon change.~~
-38. sync bitmap when switching back and forth.
+38. ~~sync bitmap when switching back and forth.~~
 39. sync highlight when switching back and forth.
+40. slight black ground color alignment.
+
 
 # Bugs
 1. ../data/roast_pork.png. Background black* color result in rgb(255,0,0) exception.
