@@ -4,6 +4,7 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="fabColorAccent">#ccffff</color>
+    <color name="fabMiniColorAccent">#FFB6C1</color>
     <color name="blue">#00abea</color>
     <color name="white">#ffffff</color>
 </resources>

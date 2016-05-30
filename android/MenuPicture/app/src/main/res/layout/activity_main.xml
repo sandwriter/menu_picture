@@ -45,10 +45,13 @@
                             android:id="@+id/highlight_tab"
                             android:layout_height="match_parent"
                             android:layout_width="match_parent"/>
+
                         <it.sephiroth.android.library.imagezoom.ImageViewTouch
                             android:id="@+id/touch_image"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"/>
+
+                        <include layout="@layout/fab_layout" />
                     </FrameLayout>
 
                     <android.support.design.widget.FloatingActionButton
