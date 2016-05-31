@@ -48,8 +48,8 @@ Show pictures for menu item
 27. Use line break to distinguish menu items.
 28. ~~If a rect is horizontal right to another one, then they are together. Otherwise, they are not.~~
 29. Location as search context.
-30. Camera to take picture.
-31. zoom and pan around.
+30. ~~Camera to take picture.~~
+31. ~~zoom and pan around.~~
 32. ~~floating button.~~
 33. ~~floating button color.~~
 34. ~~refactor highlight view to do most stuff in set function instead of constructor.~~
@@ -62,9 +62,11 @@ Show pictures for menu item
 41. refactor the code to be more readable.
 42. remove fab on picture tab.
 43. Unicode support
-44. fab to pop a list
+44. ~~fab to pop a list~~
 45. fix initial size difference.
 46. progress bar.
+47. touch/highlight paint texture difference.
+48. initial touch/highlight zoom difference.
 
 
 # Bugs

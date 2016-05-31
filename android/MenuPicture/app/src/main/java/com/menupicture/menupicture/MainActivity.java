@@ -1,9 +1,14 @@
 package com.menupicture.menupicture;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
 import android.view.View;
@@ -12,11 +17,15 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.TabHost;
-import android.widget.Toast;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.jar.Manifest;
 
 import it.sephiroth.android.library.imagezoom.ImageViewTouch;
 import it.sephiroth.android.library.imagezoom.ImageViewTouchBase;
@@ -52,6 +61,12 @@ public class MainActivity extends Activity {
     private boolean fab_expand;
 
     private static Bitmap menu_bitmap;
+
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+    static final int REQUEST_TAKE_PHOTO = 2;
+    static final int REQUEST_CODE_ASK_PERMISSIONS = 123;
+
+    private String menuPicturePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,21 +133,6 @@ public class MainActivity extends Activity {
                     fab_expand = false;
                     hideFAB();
                 }
-/*
-                if (touch_mode) {
-                    Log.v(TAG, touchView.getDisplayMatrix().toShortString());
-                    highlightView.setMatrix(touchView.getDisplayMatrix());
-                    highlightView.bringToFront();
-                    fab.setImageResource(R.drawable.highlight);
-                    touch_mode = false;
-                }else{
-                    highlightView.reset();
-                    touchView.setImageBitmap(highlightView.getFinalBitmap(), touchView.getDisplayMatrix(), -1, -1);
-                    touchView.bringToFront();
-                    fab.setImageResource(R.drawable.eye);
-                    touch_mode = true;
-                }
-*/
             }
         });
 
@@ -168,7 +168,25 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 hideFAB();
                 fab_expand = false;
-                Log.v(TAG, "fab_camera clicked.");
+                fab.setImageResource(R.drawable.eye);
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    // Create the File where the photo should go
+                    File photoFile = null;
+                    try {
+                        photoFile = createImageFile();
+                    } catch (IOException ex) {
+                        // Error occurred while creating the File
+                        Log.v(TAG, ex.getMessage());
+                    }
+                    // Continue only if the File was successfully created
+                    if (photoFile != null) {
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                                Uri.fromFile(photoFile));
+                        startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                    }
+                }
+                Log.v(TAG, "picture taken.");
             }
         });
     }
@@ -224,5 +242,53 @@ public class MainActivity extends Activity {
         fab_camera.setLayoutParams(layoutParams3);
         fab_camera.startAnimation(hide_fab_camera);
         fab_camera.setClickable(false);
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        int hasWriteExternalStoragePermission= checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if(hasWriteExternalStoragePermission != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_CODE_ASK_PERMISSIONS);
+            return null;
+        }
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        menuPicturePath = image.getAbsolutePath();
+        return image;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_TAKE_PHOTO){
+            if (resultCode == RESULT_OK){
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                File menuPictureFile = new File(menuPicturePath);
+                if (menuPictureFile.exists()) {
+                    Log.v(TAG, "menu picture path: "+ menuPictureFile);
+                    Bitmap menuBitmap = BitmapFactory.decodeFile(menuPicturePath, options);
+                    if (menuBitmap == null){
+                        Log.v(TAG, "bit map is empty!!!");
+                    }
+
+                    touchView.setImageBitmap(menuBitmap);
+                    touchView.bringToFront();
+                }
+            }
+        }else if(requestCode == REQUEST_CODE_ASK_PERMISSIONS){
+            if(resultCode == RESULT_OK){
+                fab_camera.callOnClick();
+            }
+        }
     }
 }

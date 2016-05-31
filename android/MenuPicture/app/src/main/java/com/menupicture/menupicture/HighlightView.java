@@ -144,6 +144,7 @@ public class HighlightView extends View {
     }
 
     public void setMenuBitmap(final Bitmap menu_bitmap){
+        Log.v(TAG, "setMenuBitmap called");
         this.menu_bitmap = menu_bitmap;
         invalidate();
 
