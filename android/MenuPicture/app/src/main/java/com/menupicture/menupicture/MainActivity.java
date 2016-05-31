@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,15 +24,20 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.jar.Manifest;
 
 import it.sephiroth.android.library.imagezoom.ImageViewTouch;
 import it.sephiroth.android.library.imagezoom.ImageViewTouchBase;
 
 
 public class MainActivity extends Activity {
+    public enum Mode {Touch, Highlight};
+
+    private Map<Mode, Integer> icon_id_map;
+
     private static final String TAG = "MainActivity";
 
     private GridView gridView;
@@ -44,10 +50,12 @@ public class MainActivity extends Activity {
     private ImageViewTouch touchView;
     private HighlightView highlightView;
     private FloatingActionButton fab;
-    private FloatingActionButton fab_eye;
+    private FloatingActionButton fab_touch;
     private FloatingActionButton fab_highlight;
     private FloatingActionButton fab_camera;
     private FrameLayout fab_framelayout;
+
+    private boolean fab_expand = false;
 
     //Animations
     private Animation show_fab_eye;
@@ -57,25 +65,35 @@ public class MainActivity extends Activity {
     private Animation show_fab_camera;
     private Animation hide_fab_camera;
 
-    private boolean touch_mode;
-    private boolean fab_expand;
-
-    private static Bitmap menu_bitmap;
+    // The Bitmap representing the menu image.
+    private static Bitmap bitmap;
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     static final int REQUEST_TAKE_PHOTO = 2;
-    static final int REQUEST_CODE_ASK_PERMISSIONS = 123;
+    static final int REQUEST_CODE_ASK_CAMERA_PERMISSIONS = 3;
 
     private String menuPicturePath;
+
+    private Matrix displayMatrix;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        fab_expand = false;
+        icon_id_map = new HashMap<Mode, Integer>();
+        icon_id_map.put(Mode.Touch, R.drawable.eye);
+        icon_id_map.put(Mode.Highlight, R.drawable.highlight);
 
-        fab_eye = (FloatingActionButton)findViewById(R.id.fab_eye);
+        displayMatrix = new Matrix();
+
+        touchView = (ImageViewTouch) findViewById(R.id.touch_image);
+        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
+        // Main floating action button.
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+
+        // Set of smaller floating action button triggered by the main one.
+        fab_touch = (FloatingActionButton)findViewById(R.id.fab_eye);
         fab_highlight = (FloatingActionButton)findViewById(R.id.fab_highlight);
         fab_camera = (FloatingActionButton)findViewById(R.id.fab_camera);
         fab_framelayout = (FrameLayout)findViewById(R.id.fab_framelayout);
@@ -106,26 +124,19 @@ public class MainActivity extends Activity {
         gridAdapter = new GridViewAdapter(this, R.layout.grid_item, imageList);
         gridView.setAdapter(gridAdapter);
 
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inDither = true;
-        options.inScaled = true;
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        menu_bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.indian2, options);
-
-        touchView = (ImageViewTouch) findViewById(R.id.touch_image);
+        // Touch view by default. Use a stock image.
+        // TODO(wenjiesha) Camera by default.
         touchView.setDisplayType(ImageViewTouchBase.DisplayType.FIT_IF_BIGGER);
-        touchView.setImageBitmap(menu_bitmap, null, -1, -1);
+        InitializeBitmap();
+        touchView.setImageBitmap(bitmap);
+        highlightView.setVisibility(View.GONE);
 
-        highlightView = (HighlightView) findViewById(R.id.highlight_tab);
-        highlightView.setMenuBitmap(menu_bitmap);
-        highlightView.setMatrix(touchView.getDisplayMatrix());
-
-        touch_mode = true;
-
-        fab = (FloatingActionButton) findViewById(R.id.fab);
+        // Expand/hide the mini floating action buttons when necessary.
         fab.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+                displayMatrix = touchView.getDisplayMatrix();
+
                 if (!fab_expand) {
                     fab_expand = true;
                     expandFAB();
@@ -136,72 +147,69 @@ public class MainActivity extends Activity {
             }
         });
 
-        fab_eye.setOnClickListener(new View.OnClickListener(){
+        // Touch/eye/zoom/pan view is chose.
+        fab_touch.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                Log.v(TAG, "eye clicked.");
-
-                highlightView.reset();
-                touchView.setImageBitmap(highlightView.getFinalBitmap(), touchView.getDisplayMatrix(), -1, -1);
-                touchView.bringToFront();
-                fab.setImageResource(R.drawable.eye);
-                touch_mode = true;
-                hideFAB();
-                fab_expand = false;
+                touchView.setImageBitmap(getImageBitmap(), displayMatrix, -1, -1);
+                touchView.setVisibility(View.VISIBLE);
+                highlightView.setVisibility(View.GONE);
+                hideFAB(Mode.Touch);
             }
         });
 
+        // Highlight view is chosen.
         fab_highlight.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                highlightView.setMatrix(touchView.getDisplayMatrix());
-                highlightView.bringToFront();
-                fab.setImageResource(R.drawable.highlight);
-                touch_mode = false;
-                hideFAB();
-                fab_expand = false;
+                highlightView.setImageBitmap(getImageBitmap());
+                highlightView.setMatrix(displayMatrix);
+                highlightView.setVisibility(View.VISIBLE);
+                touchView.setVisibility(View.GONE);
+                hideFAB(Mode.Highlight);
             }
         });
 
         fab_camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                hideFAB();
-                fab_expand = false;
-                fab.setImageResource(R.drawable.eye);
                 Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                    // Create the File where the photo should go
                     File photoFile = null;
                     try {
                         photoFile = createImageFile();
                     } catch (IOException ex) {
-                        // Error occurred while creating the File
-                        Log.v(TAG, ex.getMessage());
+                        Log.v(TAG, "Error create image file stub: " + ex.getMessage());
                     }
-                    // Continue only if the File was successfully created
                     if (photoFile != null) {
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
                                 Uri.fromFile(photoFile));
                         startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
                     }
                 }
-                Log.v(TAG, "picture taken.");
             }
         });
     }
 
+    private void InitializeBitmap() {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inDither = true;
+        options.inScaled = true;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.indian2, options);
+    }
+
     public static Bitmap GetMenuBitmap(){
-        return menu_bitmap;
+        return bitmap;
     }
 
     private void expandFAB() {
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) fab_eye.getLayoutParams();
-        layoutParams.rightMargin += (int) (fab_eye.getWidth() * 1.7);
-        layoutParams.bottomMargin += (int) (fab_eye.getHeight() * 0.25);
-        fab_eye.setLayoutParams(layoutParams);
-        fab_eye.startAnimation(show_fab_eye);
-        fab_eye.setClickable(true);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) fab_touch.getLayoutParams();
+        layoutParams.rightMargin += (int) (fab_touch.getWidth() * 1.7);
+        layoutParams.bottomMargin += (int) (fab_touch.getHeight() * 0.25);
+        fab_touch.setLayoutParams(layoutParams);
+        fab_touch.startAnimation(show_fab_eye);
+        fab_touch.setClickable(true);
 
         FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) fab_highlight.getLayoutParams();
         layoutParams2.rightMargin += (int) (fab_highlight.getWidth() * 1.5);
@@ -222,12 +230,16 @@ public class MainActivity extends Activity {
     }
 
     private void hideFAB() {
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) fab_eye.getLayoutParams();
-        layoutParams.rightMargin -= (int) (fab_eye.getWidth() * 1.7);
-        layoutParams.bottomMargin -= (int) (fab_eye.getHeight() * 0.25);
-        fab_eye.setLayoutParams(layoutParams);
-        fab_eye.startAnimation(hide_fab_eye);
-        fab_eye.setClickable(false);
+        hideFAB(null);
+    }
+
+    private void hideFAB(Mode mode) {
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) fab_touch.getLayoutParams();
+        layoutParams.rightMargin -= (int) (fab_touch.getWidth() * 1.7);
+        layoutParams.bottomMargin -= (int) (fab_touch.getHeight() * 0.25);
+        fab_touch.setLayoutParams(layoutParams);
+        fab_touch.startAnimation(hide_fab_eye);
+        fab_touch.setClickable(false);
 
         FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) fab_highlight.getLayoutParams();
         layoutParams2.rightMargin -= (int) (fab_highlight.getWidth() * 1.5);
@@ -242,6 +254,12 @@ public class MainActivity extends Activity {
         fab_camera.setLayoutParams(layoutParams3);
         fab_camera.startAnimation(hide_fab_camera);
         fab_camera.setClickable(false);
+
+        fab_expand = false;
+        if(mode != null) {
+            fab.setImageResource(icon_id_map.get(mode));
+
+        }
     }
 
     private File createImageFile() throws IOException {
@@ -253,7 +271,7 @@ public class MainActivity extends Activity {
         int hasWriteExternalStoragePermission= checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if(hasWriteExternalStoragePermission != PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    REQUEST_CODE_ASK_PERMISSIONS);
+                    REQUEST_CODE_ASK_CAMERA_PERMISSIONS);
             return null;
         }
         File image = File.createTempFile(
@@ -276,19 +294,23 @@ public class MainActivity extends Activity {
                 File menuPictureFile = new File(menuPicturePath);
                 if (menuPictureFile.exists()) {
                     Log.v(TAG, "menu picture path: "+ menuPictureFile);
-                    Bitmap menuBitmap = BitmapFactory.decodeFile(menuPicturePath, options);
-                    if (menuBitmap == null){
+                    bitmap = BitmapFactory.decodeFile(menuPicturePath, options);
+                    if (bitmap == null){
                         Log.v(TAG, "bit map is empty!!!");
                     }
-
-                    touchView.setImageBitmap(menuBitmap);
-                    touchView.bringToFront();
+                    // Reset all transformation for new image.
+                    displayMatrix = new Matrix();
+                    fab_touch.callOnClick();
                 }
             }
-        }else if(requestCode == REQUEST_CODE_ASK_PERMISSIONS){
+        }else if(requestCode == REQUEST_CODE_ASK_CAMERA_PERMISSIONS){
             if(resultCode == RESULT_OK){
                 fab_camera.callOnClick();
             }
         }
+    }
+
+    public Bitmap getImageBitmap() {
+        return bitmap;
     }
 }

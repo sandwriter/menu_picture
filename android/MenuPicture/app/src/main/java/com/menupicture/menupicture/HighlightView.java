@@ -35,8 +35,6 @@ import com.google.api.services.vision.v1.model.Image;
 import com.google.api.services.vision.v1.model.Vertex;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,9 +100,10 @@ public class HighlightView extends View {
     private final Lock matrix_rLock = matrix_lock.readLock();
     private final Lock matrix_wLock = matrix_lock.writeLock();
 
-    private Matrix transformation = new Matrix();
-    private Matrix baseTransformation;
-    private Matrix inverseTransformation = new Matrix();
+    private Matrix transformation;
+    private Matrix baseMatrix;
+    private Matrix displayMatrix;
+    private Matrix inverseTransformation;
 
     private java.util.ArrayList<HighlightRectF> rect_list = new java.util.ArrayList<HighlightRectF>();
 
@@ -132,19 +131,24 @@ public class HighlightView extends View {
     }
 
     public void setMatrix(final Matrix matrix){
+        displayMatrix = new Matrix(matrix);
+
         matrix_wLock.lock();
         try {
-            transformation = new Matrix(baseTransformation);
-            transformation.postConcat(matrix);
-            transformation.invert(inverseTransformation);
+            if (baseMatrix != null) {
+                transformation = new Matrix(baseMatrix);
+                inverseTransformation = new Matrix();
+                transformation.postConcat(matrix);
+                transformation.invert(inverseTransformation);
+            }
         }finally {
             matrix_wLock.unlock();
         }
         invalidate();
     }
 
-    public void setMenuBitmap(final Bitmap menu_bitmap){
-        Log.v(TAG, "setMenuBitmap called");
+    // Set the menu image Bitmap.
+    public void setImageBitmap(final Bitmap menu_bitmap){
         this.menu_bitmap = menu_bitmap;
         invalidate();
 
@@ -244,8 +248,11 @@ public class HighlightView extends View {
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        Log.v(TAG, "onSizeChanged is called");
         super.onSizeChanged(w, h, oldw, oldh);
 
+        // Calculate the transformation to center, scale the image. Use this transformation as the
+        // base transformation for additonal multiplication.
         float scale = 1.0f;
         float dx = 0.0f;
         float dy = 0.0f;
@@ -261,9 +268,17 @@ public class HighlightView extends View {
             dx = (w - menu_width * scale) / 2.0f;
         }
 
-        baseTransformation = new Matrix();
-        baseTransformation.preScale(scale, scale);
-        baseTransformation.postTranslate(dx, dy);
+        baseMatrix = new Matrix();
+        baseMatrix.preScale(scale, scale);
+        baseMatrix.postTranslate(dx, dy);
+
+        if (displayMatrix != null){
+            transformation = new Matrix(baseMatrix);
+            inverseTransformation = new Matrix();
+            transformation.postConcat(displayMatrix);
+            transformation.invert(inverseTransformation);
+            invalidate();
+        }
 
         finalBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         finalCanvas = new Canvas(finalBitmap);
@@ -298,12 +313,12 @@ public class HighlightView extends View {
     }
 
     public Bitmap getFinalBitmap(){
-        finalCanvas.drawBitmap(menu_bitmap, baseTransformation, bitmap_paint);
+        finalCanvas.drawBitmap(menu_bitmap, baseMatrix, bitmap_paint);
         bound_rLock.lock();
         try {
             for (HighlightRectF rect : rect_list) {
                 RectF rectf = new RectF();
-                baseTransformation.mapRect(rectf, rect.rectf);
+                baseMatrix.mapRect(rectf, rect.rectf);
                 boolean on = rect.on ^ rect.touched;
                 if (on) {
                     finalCanvas.drawRect(rectf, rectf_on_paint);
