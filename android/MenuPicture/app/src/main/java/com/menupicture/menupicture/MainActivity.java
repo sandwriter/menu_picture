@@ -15,9 +15,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.TabHost;
+
+import com.koushikdutta.ion.Ion;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +58,7 @@ public class MainActivity extends Activity {
     private FloatingActionButton fab_highlight;
     private FloatingActionButton fab_camera;
     private FrameLayout fab_framelayout;
+    private ImageView full_img;
 
     private boolean fab_expand = false;
 
@@ -91,6 +96,14 @@ public class MainActivity extends Activity {
         highlightView = (HighlightView) findViewById(R.id.highlight_tab);
         // Main floating action button.
         fab = (FloatingActionButton) findViewById(R.id.fab);
+        // Full image view that open on click.
+        full_img = (ImageView) findViewById(R.id.full_img);
+        full_img.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                full_img.setVisibility(View.GONE);
+            }
+        });
 
         // Set of smaller floating action button triggered by the main one.
         fab_touch = (FloatingActionButton)findViewById(R.id.fab_eye);
@@ -123,6 +136,14 @@ public class MainActivity extends Activity {
         gridView = (GridView) findViewById(R.id.picture_tab);
         gridAdapter = new GridViewAdapter(this, R.layout.grid_item, imageList);
         gridView.setAdapter(gridAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                ImageItem item = (ImageItem)gridView.getAdapter().getItem(position);
+                full_img.setVisibility(View.VISIBLE);
+                Ion.with(full_img).placeholder(R.drawable.loading).load(item.getImageUrl());
+            }
+        });
 
         // Touch view by default. Use a stock image.
         // TODO(wenjiesha) Camera by default.
