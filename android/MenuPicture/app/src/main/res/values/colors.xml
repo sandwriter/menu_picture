@@ -7,4 +7,5 @@
     <color name="fabMiniColorAccent">#FFB6C1</color>
     <color name="blue">#00abea</color>
     <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
 </resources>
