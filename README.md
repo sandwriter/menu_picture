@@ -26,21 +26,21 @@ Show pictures for menu item
 5. ~~highlight marker.~~
 6. ~~add a imageview with modified pciture.~~ a view is good
 7. ~~Highlight on top of picture.~~
-8. pan move picture.
-9. hidding button to control edit/move mode.
+8. ~~pan move picture.~~
+9. ~~hidding button to control edit/move mode.~~
 10. ~~vision api.~~
 11. crop
-12. search
-13. hidding tab to show search result.
+12. ~~search~~
+13. ~~hidding tab to show search result.~~
 14. ~~bound view.~~
 15. ~~move finger to enable bounds.~~
 16. optimize some java code.
 17. ~~Add a action bar to change mode, i.e. highlight, pan/move, image.~~
 18. ~~image gallery.~~
-19. dynamic add images.
-20. return image results and add to images.
+19. ~~dynamic add images.~~
+20. ~~return image results and add to images.~~
 21. ~~image with text.~~
-22. clickable images.
+22. ~~clickable images.~~
 23. ~~search images at the end of finger move.~~
 24. ~~Fetch image from the search result and push to the grid view adapter.~~
 25. Learn menu item.
@@ -58,7 +58,7 @@ Show pictures for menu item
 37. ~~switch back/forth with icon change.~~
 38. ~~sync bitmap when switching back and forth.~~
 39. ~~sync highlight when switching back and forth.~~
-40. slight black ground color alignment.
+40. ~~slight black ground color alignment.~~
 41. refactor the code to be more readable.
 42. remove fab on picture tab.
 43. Unicode support
