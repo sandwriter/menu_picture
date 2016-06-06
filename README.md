@@ -1,7 +1,7 @@
 # menu_picture
 Show pictures for menu item
 
-![Highlight mode](snapshot/highlight_tab.png =400x)
+<img src="snapshot/highlight_tab.png" alt="Highlight mode" width="400">
 
 # TODO(Python)
 1. ~~clip rectangle.~~
