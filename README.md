@@ -1,6 +1,8 @@
 # menu_picture
 Show pictures for menu item
 
+![Highlight mode](snapshot/highlight_tab.png)
+
 # TODO(Python)
 1. ~~clip rectangle.~~
 2. ~~multiple connecting clip rectangle.~~ Currently use a single clipping rectangle to decide connectivity.
@@ -67,6 +69,7 @@ Show pictures for menu item
 46. progress bar.
 47. touch/highlight paint texture difference.
 48. initial touch/highlight zoom difference.
+49. Better text description. currently some words are missing.
 
 
 # Bugs
